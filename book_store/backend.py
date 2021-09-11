@@ -2,67 +2,64 @@ import contextlib
 import sys
 import sqlite3
 
-def connectivity():
-    cursor = None
+class BookRepository:
 
-    @contextlib.contextmanager
-    def connect():
-        nonlocal cursor 
+    def __init__(self, db) -> None:
+        self.connection_factory = self.connectivity(db)
+        try: 
+            self.init_schema()
+        except Exception as err:
+            print('unexpected error ', err)
+            sys.exit(1)
 
-        try:
-            if cursor is None:
-                connection = sqlite3.connect('books.db')
+
+    def connectivity(self, db):
+        connection = None
+
+        @contextlib.contextmanager
+        def connect():
+            nonlocal connection
+
+            if connection is None:
+                connection = sqlite3.connect(db)
                 with connection:
-                    cursor = connection.cursor()
-                    yield cursor
+                    yield connection
             else:
-                yield cursor
-        finally:
-            cursor.close()
-            cursor = None
+                yield connection
 
-    return connect
+        return connect
 
 
-def init_schema():
-    with cursor_factory() as cursor:
-        cursor.execute('CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title text, author text, year integer, isbn integer)')
+    def init_schema(self):
+        with self.connection_factory() as cursor:
+            cursor.execute('CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title text, author text, year integer, isbn integer)')
 
 
-def insert(title, author, year, isbn):
-    with cursor_factory() as cursor:
-        cursor.execute('INSERT INTO books VALUES (NULL, ?, ?, ?, ?)', (title, author, year, isbn))
+    def insert(self, title, author, year, isbn):
+        with self.connection_factory() as cursor:
+            cursor.execute('INSERT INTO books VALUES (NULL, ?, ?, ?, ?)', (title, author, year, isbn))
 
 
-def list_all():
-    with cursor_factory() as cursor:
-        cursor.execute('SELECT * FROM books')
-        return cursor.fetchall()
+    def list_all(self):
+        with self.connection_factory() as cursor:
+            return cursor.execute('SELECT * FROM books')
 
 
-def search(title='', author='', year='', isbn=''):
-    with cursor_factory() as cursor:
-        cursor.execute('SELECT * FROM books WHERE title=? OR author=? OR year=? OR isbn=?', (title, author, year, isbn))
-        return cursor.fetchall()
+    def search(self, title='', author='', year='', isbn=''):
+        with self.connection_factory() as cursor:
+            return cursor.execute('SELECT * FROM books WHERE title=? OR author=? OR year=? OR isbn=?', (title, author, year, isbn))
 
 
-def delete(id):
-    with cursor_factory() as cursor:
-        cursor.execute('DELETE FROM books WHERE id=?', (id,))
+    def delete(self, id):
+        with self.connection_factory() as cursor:
+            cursor.execute('DELETE FROM books WHERE id=?', (id,))
 
 
-def update(id, title, author, year, isbn):
-    with cursor_factory() as cursor:
-        cursor.execute('UPDATE books SET title=?, author=?, year=?, isbn=? WHERE id=?', (title, author, year, isbn, id))
+    def update(self, id, title, author, year, isbn):
+        with self.connection_factory() as cursor:
+            cursor.execute('UPDATE books SET title=?, author=?, year=?, isbn=? WHERE id=?', (title, author, year, isbn, id))
+ 
 
-
-def init():
-    try:
-        init_schema()
-    except Exception as err:
-        print('unexpected error ', err)
-        sys.exit(1)
-
-
-cursor_factory = connectivity()
-init()
+    def __del__(self):
+        with self.connection_factory() as conn:
+            conn.close()

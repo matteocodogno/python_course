@@ -1,121 +1,127 @@
-import backend as be
+from backend import BookRepository
 from tkinter import *
 
-window = Tk()
+class Gui:
 
-# Labels
-title = Label(window, text='Title')
-title.grid(row=0, column=0)
-author = Label(window, text='Author')
-author.grid(row=0, column=2)
-year = Label(window, text='Year')
-year.grid(row=1, column=0)
-isbn = Label(window, text='ISBN')
-isbn.grid(row=1, column=2)
+    def __init__(self):
+        self.bookRepository = BookRepository('books.db')
+        self.window = Tk()
+        self.render()
 
-# Input Text
-title_value = StringVar()
-title_input = Entry(window, textvariable=title_value)
-title_input.grid(row=0, column=1)
+    def render(self):
+        # Labels
+        title = Label(self.window, text='Title')
+        title.grid(row=0, column=0)
+        author = Label(self.window, text='Author')
+        author.grid(row=0, column=2)
+        year = Label(self.window, text='Year')
+        year.grid(row=1, column=0)
+        isbn = Label(self.window, text='ISBN')
+        isbn.grid(row=1, column=2)
 
-author_value = StringVar()
-author_input = Entry(window, textvariable=author_value)
-author_input.grid(row=0, column=3)
+        # Input Text
+        self.title_value = StringVar()
+        title_input = Entry(self.window, textvariable=self.title_value)
+        title_input.grid(row=0, column=1)
 
-year_value = StringVar()
-year_input = Entry(window, textvariable=year_value)
-year_input.grid(row=1, column=1)
+        self.author_value = StringVar()
+        author_input = Entry(self.window, textvariable=self.author_value)
+        author_input.grid(row=0, column=3)
 
-isbn_value = StringVar()
-isbn_input = Entry(window, textvariable=isbn_value)
-isbn_input.grid(row=1, column=3)
+        self.year_value = StringVar()
+        year_input = Entry(self.window, textvariable=self.year_value)
+        year_input.grid(row=1, column=1)
 
-# List
-result_list = Listbox(window)
-result_list.grid(row=2, column=0, columnspan=2, rowspan=6)
-scrollbar = Scrollbar(window)
-scrollbar.grid(row=2, column=2, rowspan=6)
+        self.isbn_value = StringVar()
+        isbn_input = Entry(self.window, textvariable=self.isbn_value)
+        isbn_input.grid(row=1, column=3)
 
-result_list.configure(yscrollcommand=scrollbar.set)
-scrollbar.configure(command=result_list.yview)
+        # List
+        self.result_list = Listbox(self.window)
+        self.result_list.grid(row=2, column=0, columnspan=2, rowspan=6)
+        scrollbar = Scrollbar(self.window)
+        scrollbar.grid(row=2, column=2, rowspan=6)
 
+        self.result_list.configure(yscrollcommand=scrollbar.set)
+        scrollbar.configure(command=self.result_list.yview)
 
-def onselect(evt):
-    w = evt.widget
-    tindex = w.curselection()
-    if tindex is not None and len(tindex) > 0:
-        index = tindex[0]
-        _, title, author, year, isbn = w.get(index)
-        title_value.set(title)
-        author_value.set(author)
-        year_value.set(year)
-        isbn_value.set(isbn)
+        self.result_list.bind('<<ListboxSelect>>', self.onselect)
+ 
+        # Buttons
+        all_btn = Button(self.window, text='View all', command=self.view_command, width=12)
+        all_btn.grid(row=2, column=3)
 
+        search_btn = Button(self.window, text='Search entry', command=self.search_command, width=12)
+        search_btn.grid(row=3, column=3)
 
-result_list.bind('<<ListboxSelect>>', onselect)
+        add_btn = Button(self.window, text='Add entry', command=self.add_command, width=12)
+        add_btn.grid(row=4, column=3)
 
+        update_btn = Button(self.window, text='Update', command=self.update_command, width=12)
+        update_btn.grid(row=5, column=3)
 
-def clear_form():
-    title_value.set('')
-    author_value.set('')
-    year_value.set('')
-    isbn_value.set('')
-    result_list.select_clear(0, END)
+        delete_btn = Button(self.window, text='Delete', command=self.delete_command, width=12)
+        delete_btn.grid(row=6, column=3)
 
+        close_btn = Button(self.window, text='Close', command=self.close_command, width=12)
+        close_btn.grid(row=7, column=3)
 
-def view_command():
-    result_list.delete(0, END)
-    for row in be.list_all():
-        result_list.insert(END, row)
+        self.view_command()
+        self.window.mainloop()
 
-
-def add_command():
-    be.insert(title_value.get(), author_value.get(), year_value.get(), isbn_value.get())
-    view_command()
-    clear_form()
-
-
-def search_command():
-    result_list.delete(0, END)
-    for row in be.search(title_value.get(), author_value.get(), year_value.get(), isbn_value.get()):
-        result_list.insert(END, row)
-
-
-def delete_command():
-    id, *_ = result_list.get(ACTIVE)
-    be.delete(id)
-    view_command()
+ 
+    def onselect(self, evt):
+        w = evt.widget
+        tindex = w.curselection()
+        if tindex is not None and len(tindex) > 0:
+            index = tindex[0]
+            _, title, author, year, isbn = w.get(index)
+            self.title_value.set(title)
+            self.author_value.set(author)
+            self.year_value.set(year)
+            self.isbn_value.set(isbn)
 
 
-def update_command():
-    id, *_ = result_list.get(ACTIVE)
-    be.update(id, title_value.get(), author_value.get(), year_value.get(), isbn_value.get())
-    view_command()
-    clear_form()
+    def clear_form(self):
+        self.title_value.set('')
+        self.author_value.set('')
+        self.year_value.set('')
+        self.isbn_value.set('')
+        self.result_list.select_clear(0, END)
 
 
-def close_command():
-    window.destroy()
+    def view_command(self):
+        self.result_list.delete(0, END)
+        for row in self.bookRepository.list_all():
+            self.result_list.insert(END, row)
 
 
-# Buttons
-all_btn = Button(window, text='View all', command=view_command, width=12)
-all_btn.grid(row=2, column=3)
+    def add_command(self):
+        self.bookrepository.insert(self.title_value.get(), self.author_value.get(), self.year_value.get(), self.isbn_value.get())
+        self.view_command()
+        self.clear_form()
 
-search_btn = Button(window, text='Search entry', command=search_command, width=12)
-search_btn.grid(row=3, column=3)
 
-add_btn = Button(window, text='Add entry', command=add_command, width=12)
-add_btn.grid(row=4, column=3)
+    def search_command(self):
+        self.result_list.delete(0, END)
+        for row in self.bookRepository.search(self.title_value.get(), self.author_value.get(), self.year_value.get(), self.isbn_value.get()):
+            self.result_list.insert(END, row)
 
-update_btn = Button(window, text='Update', command=update_command, width=12)
-update_btn.grid(row=5, column=3)
 
-delete_btn = Button(window, text='Delete', command=delete_command, width=12)
-delete_btn.grid(row=6, column=3)
+    def delete_command(self):
+        id, *_ = self.result_list.get(ACTIVE)
+        self.bookRepository.delete(id)
+        self.view_command()
 
-close_btn = Button(window, text='Close', command=close_command, width=12)
-close_btn.grid(row=7, column=3)
 
-view_command()
-window.mainloop()
+    def update_command(self):
+        id, *_ = self.result_list.get(ACTIVE)
+        self.bookRepository.update(id, self.title_value.get(), self.author_value.get(), self.year_value.get(), self.isbn_value.get())
+        self.view_command()
+        self.clear_form()
+
+
+    def close_command(self):
+        self.window.destroy()
+
+gui = Gui()
